@@ -3,9 +3,11 @@
 
 #include <stdint.h>
 
-extern volatile uint16_t nixie_pwm_duty,nixie_pwm_duty2;
+extern volatile uint16_t nixie_pwm_duty,duty;
 extern volatile uint16_t nixie_ms;
 extern uint16_t max_adc_read;
+extern volatile uint8_t nixie_pwm_counter;  // 0–100
+extern volatile  uint8_t pwm_override;
 
 // -----------------------------
 // Symbol tube definitions
@@ -68,12 +70,11 @@ void nixie_set_symbol(nixie_symbol_t sym);
 void nixie_set_unit(nixie_unit_t unit);
 void nixie_set_blank(uint8_t tube);
 void nixie_clear_all_digits(void);
-
 void nixie_display_number(uint16_t value, uint8_t dot0, uint8_t dot1, uint8_t dot2);
-
+void format_3digits_right_aligned(uint32_t value, uint8_t *d0, uint8_t *d1, uint8_t *d2, uint8_t *dp0, uint8_t *dp1, uint8_t *dp2);
+void nixie_pwm_init();
+void display_count(uint16_t count);
 void display_voltage(float v);
 void display_usv(float usv);     // NEW: µSv/h display
-
-void nixie_pwm_init(void);
-void nixie_update_brightness(void);
+void nixie_update_brightness(uint16_t adc_value);
 #endif

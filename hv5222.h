@@ -10,5 +10,6 @@ void hv5222_write64(uint64_t value);
 void hv5222_set_bit(uint8_t index, uint8_t state);
 uint64_t hv5222_get_state(void);
 void hv5222_enable(uint8_t enable);
+uint8_t hv5222_get_enabled(void);
 
 #endif

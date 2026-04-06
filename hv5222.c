@@ -1,9 +1,12 @@
 #include <avr/io.h>
 #include "hv5222.h"
 #include "pinmap.h"
+#include "nixie_display.h"
 #include <util/delay.h>
 
 static uint64_t hv5222_state = 0;
+static uint8_t hv5222_is_enabled = 0;
+
 
 static inline void invert_pin(volatile uint8_t *port, uint8_t bit, uint8_t value)
 {
@@ -38,7 +41,6 @@ static inline void write_single_bit(uint8_t bit)
 
 void hv5222_write64(uint64_t value) {
 	hv5222_state = value;
-	hv5222_enable(0);
 	for (int i = 63; i >= 0; i--) {
 		uint8_t bit = (value >> i) & 1;
 		write_single_bit(bit);
@@ -61,10 +63,23 @@ uint64_t hv5222_get_state(void) {
 void hv5222_enable(uint8_t enable)
 {
 	if (enable)
-	DRIVER_ENABLE_PORT &= ~(1 << DRIVER_ENABLE_PIN);
+	{
+		// 		DRIVER_ENABLE_PORT &= ~(1 << DRIVER_ENABLE_PIN);
+		// 		hv5222_is_enabled = 1;
+		OCR1B = nixie_pwm_duty;
+
+	}
 	else
-	DRIVER_ENABLE_PORT |=  (1 << DRIVER_ENABLE_PIN);
-	
+	{
+		// 		DRIVER_ENABLE_PORT |=  (1 << DRIVER_ENABLE_PIN);
+		// 		hv5222_is_enabled = 0;
+		OCR1B = 255;
+	}
 }
+uint8_t hv5222_get_enabled(void)
+{
+	return hv5222_is_enabled;
+}
+
 
 

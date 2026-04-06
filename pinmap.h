@@ -16,7 +16,7 @@
 
 #define DRIVER_ENABLE_PORT   PORTB
 #define DRIVER_ENABLE_DDR    DDRB
-#define DRIVER_ENABLE_PIN    PB0
+#define DRIVER_ENABLE_PIN    PB2
 
 // DCF77 data pin
 #define DCF_DATA_PORT  PORTD
@@ -67,6 +67,10 @@
 
 #define PWM_BUZZER_PORT  PORTB
 #define PWM_BUZZER_DDR   DDRB
-#define PWM_BUZZER_PIN   PB2
+#define PWM_BUZZER_PIN   PB0
+
+//ADC channels
+#define ADC_CH_BRIGHTNESS    4   // ADC4 = PC4
+#define ADC_CH_400V          5   // ADC5 = PC5
 
 #endif

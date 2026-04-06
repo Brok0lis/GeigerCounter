@@ -4,17 +4,18 @@
 #include "adc.h"
 #include <stdlib.h>
 #include "pinmap.h"
+#include "timer.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #define DOT_BIT 10
 #define BITS_PER_TUBE 11
 #define ADC_NOISE_MARGIN 50
 volatile uint16_t nixie_pwm_duty = 20;   // ~20% of 255
-volatile uint16_t nixie_pwm_duty2 = 0;   // ~20% of 255
-volatile uint8_t test = 20;   // ~20% of 255
-volatile uint8_t nixie_pwm_override = 0;
-volatile uint16_t nixie_ms = 0;
+volatile uint16_t duty = 0;   // ~20% of 255
 uint16_t max_adc_read = 0;
+volatile uint8_t pwm_override = 0;
+
+volatile uint8_t nixie_pwm_counter = 0;  // 0–100
 
 static const uint8_t digit_to_bit[10] = {
 	0,  // digit 0 ? bit 0
@@ -140,11 +141,13 @@ uint8_t *dp0, uint8_t *dp1, uint8_t *dp2)
 
 
 void nixie_update(void)
-{
-	nixie_pwm_override = 1;     // stop PWM
+{	
 	hv5222_enable(0);
 	hv5222_write64(hv5222_get_state());
-	nixie_pwm_override = 0;     // stop PWM
+	if(hv5222_get_enabled()){
+		hv5222_enable(1);
+	}
+	//maybe here check if it has to be on?
 
 }
 
@@ -304,76 +307,49 @@ void display_usv(float usv)
 	nixie_update();
 }
 
-
-
-void nixie_pwm_init(void)
+void display_count(uint16_t count)
 {
-	DDRB |= (1 << PB0);   // PB0 = output
+	scale_t s = SCALE_V;
 
-	// Timer2: CTC mode
-	TCCR2A = (1 << WGM21);
+	uint8_t d0, d1, d2;
+	uint8_t dp0, dp1, dp2;
 
-	// Prescaler 8 interrupt at ~1 kHz
-	TCCR2B = (1 << CS21);
+	format_3digits_right_aligned(count,  &d0, &d1, &d2, &dp0, &dp1, &dp2);
 
-	// Compare value for ~1 kHz
-	OCR2A = 31;
+	nixie_set_digit(0, d0, dp0);
+	nixie_set_digit(1, d1, dp1);
+	nixie_set_digit(2, d2, dp2);
 
-	// Enable interrupt
-	TIMSK2 = (1 << OCIE2A);
+	nixie_set_symbol(SYM_BLANK);
+	nixie_set_unit(UNIT_BLANK);   
+
+	nixie_update();
 }
 
-ISR(TIMER2_COMPA_vect)
-{	nixie_ms++;
-	// If override is active,exit
-	if (nixie_pwm_override) {
-		return;
-	}
 
-	
-	if (nixie_pwm_duty < 15) {
-		hv5222_enable(0);
-		return;
-	}
 
-	// Normal PWM operation
-	static uint8_t counter = 0;
-	counter++;
 
-	if (counter < nixie_pwm_duty)
-	{
-	hv5222_enable(1);
-	}
-	else
-	{
-		hv5222_enable(0);
-	}
-}
-
-void nixie_update_brightness(void)
+void nixie_update_brightness(uint16_t adc_value)
 {
-	// 20-sample moving average in 10-bit domain
 	#define AVG_COUNT 20
 	static uint16_t samples[AVG_COUNT] = {0};
 	static uint32_t sum = 0;
 	static uint8_t index = 0;
 
-	uint16_t raw10 = read_brightness_adc(ADC_BRIGHTNESS_PIN);
-
 	// rolling average
 	sum -= samples[index];
-	samples[index] = raw10;
-	sum += raw10;
+	samples[index] = adc_value;
+	sum += adc_value;
 
 	index++;
 	if (index >= AVG_COUNT)
 	index = 0;
 
-	uint16_t v = sum / AVG_COUNT;   // still 0–1023, but realistically 0–256
+	uint16_t v = sum / AVG_COUNT;   // filtered ADC
 
 	// Realistic range based on divider (0–256)
-	const uint16_t MIN_ADC = 40;    // adjust to taste
-	const uint16_t MAX_ADC = 240;   // adjust to taste
+	const uint16_t MIN_ADC = 40;
+	const uint16_t MAX_ADC = 240;
 
 	if (v < MIN_ADC) v = MIN_ADC;
 	if (v > MAX_ADC) v = MAX_ADC;
@@ -381,21 +357,56 @@ void nixie_update_brightness(void)
 	uint16_t span = MAX_ADC - MIN_ADC;
 	uint16_t pos  = v - MIN_ADC;
 
-	// Map 10-bit effective range ? 8-bit PWM
-	uint8_t duty = (pos * 255UL) / span;
+	// Scale to 0–100%
+	uint8_t duty = (pos * 100UL) / span;
 
-	if (duty < 10)  duty = 10;
-	if (duty > 240) duty = 240;
+	// Optional clamp (minimum glow)
+	if (duty < 5)   duty = 0;
+	if (duty > 100) duty = 100;
 
 	nixie_pwm_duty = duty;
-	if(raw10>nixie_pwm_duty2)
-	{
-	nixie_pwm_duty2 = raw10;	
-	}
-	
+
+	// --- SCALE TO 8-BIT PWM (0–255) ---
+	// Use 32-bit math to avoid overflow
+	uint8_t pwm_value = (uint32_t)duty * 255u / 100u;
+
+	// Write to Timer1 OC1B (PB2)
+	brightness_pwm_set(pwm_value);
 }
 
+void format_3digits_right_aligned(uint32_t value,
+uint8_t *d0, uint8_t *d1, uint8_t *d2,
+uint8_t *dp0, uint8_t *dp1, uint8_t *dp2)
+{
+	// No decimal points for total count
+	*dp0 = 0;
+	*dp1 = 0;
+	*dp2 = 0;
 
+	// Extract digits
+	uint8_t hundreds = (value / 100) % 10;
+	uint8_t tens     = (value / 10)  % 10;
+	uint8_t ones     =  value        % 10;
 
+	// Right?align logic:
+	// If value < 10:   "  " + ones
+	// If value < 100:  " " + tens + ones
+	// Else:            hundreds + tens + ones
 
+	if (value < 10) {
+		*d0 = 10;   // blank
+		*d1 = 10;   // blank
+		*d2 = ones;
+	}
+	else if (value < 100) {
+		*d0 = 10;   // blank
+		*d1 = tens;
+		*d2 = ones;
+	}
+	else {
+		*d0 = hundreds;
+		*d1 = tens;
+		*d2 = ones;
+	}
+}
 

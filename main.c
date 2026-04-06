@@ -7,18 +7,17 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include "adc.h"
+#include "timer.h"
 #include "power_supplies.h"
 #include "hv5222.h"
 #include "nixie_display.h"
 #include "pinmap.h"
 #include "geiger.h"
 
-static uint16_t last_brightness_update = 0;
 #define F_CPU 8000000UL
 #include <avr/interrupt.h>
-
 volatile uint16_t raw ;
-
+uint16_t temp=0;
 int main(void)
 
 {
@@ -27,23 +26,36 @@ int main(void)
 	power_supplies_init();
 	hv5222_init();
 	adc_init();
-	nixie_pwm_init();
-	hv_pwm_init();
-	hv_pi_timer_init();
+	timer_1ms_init();
 	geiger_int_init();
-
+	display_voltage(1);
+	timer1_init();
+	timer2_init();
 	sei();
+	DDRB |= (1 << PWM_BUZZER_PIN);
+	PORTB &= ~(1 << PWM_BUZZER_PIN);
+	nixie_clear_all_digits();
 	while(1){
-		
-		uint16_t diff = (nixie_ms - last_brightness_update);
 
-		//display_usv(usv_h);
-		if ((uint16_t)(nixie_ms - last_brightness_update) >= 100)  // every 10 ms
-		{		display_voltage(nixie_pwm_duty2);
-			last_brightness_update = nixie_ms;
-			nixie_update_brightness();
-		}
 
+		if(tick_1ms_flag)
+		{	
+			adc_update();
+			tick_1ms_flag=0;
+			float val = adc_to_voltage(adc_get_hv());
+			radiation_process_1s(current_second_pulses);
+			if(temp!=geiger_total_count){
+			display_count(geiger_total_count);
+			temp=geiger_total_count;
+			}
+			
+			nixie_update_brightness(adc_get_brightness());
+			hv_supply_update(adc_get_hv());
+			
+
+	}	
+	
+						
 
 	}
 }
