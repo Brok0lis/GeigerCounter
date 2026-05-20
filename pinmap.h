@@ -46,9 +46,9 @@
 #define ADC_BRIGHTNESS_DDR   DDRC
 #define ADC_BRIGHTNESS_PIN   PC4
 
-#define ADC_AUDIO_PORT  PORTC
-#define ADC_AUDIO_DDR   DDRC
-#define ADC_AUDIO_PIN   PC3
+#define ADC_MODE_PORT  PORTC
+#define ADC_MODE_DDR   DDRC
+#define ADC_MODE_PIN   PC3
 
 //Enable charge pin
 #define ENABLE_CHARGE_PORT  PORTC
@@ -72,5 +72,6 @@
 //ADC channels
 #define ADC_CH_BRIGHTNESS    4   // ADC4 = PC4
 #define ADC_CH_400V          5   // ADC5 = PC5
+#define ADC_CH_MODE          3   // ADC3 = PC3
 
 #endif
