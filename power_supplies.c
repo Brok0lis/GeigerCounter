@@ -21,7 +21,6 @@
 #define HV_INT_MIN  -200.0f
 
 volatile float hv_voltage = 0.0f;
-
 static float hv_integral = 0.0f;
 unsigned long lastHVUpdate = 0;
 

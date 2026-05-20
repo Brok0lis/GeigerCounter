@@ -10,7 +10,9 @@
 #include "nixie_display.h"
 
 // --- Global flags and variables ---
-volatile uint8_t tick_1ms_flag = 0;        // main loop timing flag
+volatile uint8_t tick_1ms_flag = 0;        // 1ms flag
+uint8_t tick_1s_flag = 0;        // 1s flag
+volatile uint16_t ms_counter = 0;        // 1ms flag
 
 
 // ------------------------------------------------------------
@@ -86,6 +88,20 @@ void test_toggle_pd6(void)
 	PIND = (1 << PD6);   // hardware toggle
 }
 
+//Reset ms counter and raise a second flag
+void check_1s_flag(){
+	if(ms_counter>=1000)
+	{
+		ms_counter=0;
+		tick_1s_flag=1;
+	}
+}
+
+void reset_1s_flag(){
+
+		tick_1s_flag=0;
+
+}
 // ------------------------------------------------------------
 // Timer0 ISR @ 10 µs
 // - Generates 1 ms tick
@@ -95,6 +111,7 @@ ISR(TIMER0_COMPA_vect)
 {
 	// --- 1) Generate 1 ms tick ---
 	tick_1ms_flag = 1;
+	ms_counter++;
 }
 ISR(TIMER2_COMPA_vect)
 {

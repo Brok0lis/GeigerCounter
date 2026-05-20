@@ -14,9 +14,10 @@ extern volatile uint8_t current_second_pulses;
 
 extern volatile uint16_t t0_overflows;
 
-extern volatile float usv_h;
+extern float usv_h;
 
-float radiation_process_1s(uint16_t current_second_pulses);
+void radiation_process_1s(uint16_t current_second_pulses);
 void geiger_int_init(void);
+float get_usv();
 
 #endif /* GEIGER_H_ */

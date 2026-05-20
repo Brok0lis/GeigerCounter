@@ -28,30 +28,34 @@ int main(void)
 	adc_init();
 	timer_1ms_init();
 	geiger_int_init();
-	display_voltage(1);
 	timer1_init();
 	timer2_init();
 	sei();
-	DDRB |= (1 << PWM_BUZZER_PIN);
-	PORTB &= ~(1 << PWM_BUZZER_PIN);
 	nixie_clear_all_digits();
 	while(1){
-
-
+			check_1s_flag();
+			if(tick_1s_flag)
+			{
+					radiation_process_1s(current_second_pulses);
+					reset_1s_flag();
+				
+			}
+		
+			
+		
 		if(tick_1ms_flag)
 		{	
 			adc_update();
 			tick_1ms_flag=0;
 			float val = adc_to_voltage(adc_get_hv());
-			radiation_process_1s(current_second_pulses);
+			
 			if(temp!=geiger_total_count){
 			display_count(geiger_total_count);
 			temp=geiger_total_count;
 			}
 			
 			nixie_update_brightness(adc_get_brightness());
-			hv_supply_update(adc_get_hv());
-			
+			hv_supply_update(adc_get_hv());			
 
 	}	
 	
