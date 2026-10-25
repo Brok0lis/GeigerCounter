@@ -27,13 +27,6 @@ static uint16_t cpm_sum = 0;   // running sum of last 10 seconds
 
 void geiger_int_init(void)
 {
-	// PD2 (INT0) as input
-	DDRD &= ~(1 << PULSE_DETECT_PIN);
-	//Set buzzer as output
-	DDRB |= (1 << PWM_BUZZER_PIN);
-	PORTB &= ~(1 << PWM_BUZZER_PIN);
-
-
 	// Trigger on FALLING edge: ISC01 = 1, ISC00 = 0
 	EICRA |=  (1 << ISC01);
 	EICRA &= ~(1 << ISC00);

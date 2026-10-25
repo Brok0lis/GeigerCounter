@@ -339,24 +339,23 @@ void display_count(uint16_t count)
 void nixie_update_brightness(uint16_t adc_value)
 {
 	#define AVG_COUNT 20
-	static uint16_t samples[AVG_COUNT] = {0};
+	static uint16_t samples[AVG_COUNT];
 	static uint32_t sum = 0;
-	static uint8_t index = 0;
+	static uint8_t  index = 0;
 
 	// rolling average
 	sum -= samples[index];
 	samples[index] = adc_value;
 	sum += adc_value;
 
-	index++;
-	if (index >= AVG_COUNT)
+	if (++index >= AVG_COUNT)
 	index = 0;
 
-	uint16_t v = sum / AVG_COUNT;   // filtered ADC
+	uint16_t v = (uint16_t)(sum / AVG_COUNT);   // filtered 10-bit value (0..1023)
 
-	// Realistic range based on divider (0–256)
-	const uint16_t MIN_ADC = 40;
-	const uint16_t MAX_ADC = 240;
+	// Usable range of the brightness input on the 10-bit scale
+	const uint16_t MIN_ADC = 160;     // 40 * 4
+	const uint16_t MAX_ADC = 960;     // 240 * 4
 
 	if (v < MIN_ADC) v = MIN_ADC;
 	if (v > MAX_ADC) v = MAX_ADC;
@@ -364,21 +363,18 @@ void nixie_update_brightness(uint16_t adc_value)
 	uint16_t span = MAX_ADC - MIN_ADC;
 	uint16_t pos  = v - MIN_ADC;
 
-	// Scale to 0–100%
-	uint8_t duty = (pos * 100UL) / span;
+	// Scale to 0-100 %
+	uint8_t duty = (uint8_t)((pos * 100UL) / span);
 
-	// Optional clamp (minimum glow)
-	if (duty < 5)   duty = 0;
+	if (duty < 5) duty = 0;       // minimum glow cutoff
 	if (duty > 100) duty = 100;
 
 	nixie_pwm_duty = duty;
 
-	// --- SCALE TO 8-BIT PWM (0–255) ---
-	// Use 32-bit math to avoid overflow
-	uint8_t pwm_value = (uint32_t)duty * 255u / 100u;
+	// Scale to 8-bit PWM (0-255)
+	uint8_t pwm_value = (uint8_t)(((uint32_t)duty * 255u) / 100u);
 
-	// Write to Timer1 OC1B (PB2)
-	brightness_pwm_set(127);
+	brightness_pwm_set(pwm_value);
 }
 
 void format_3digits_right_aligned(uint32_t value,
