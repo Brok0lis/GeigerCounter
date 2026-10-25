@@ -4,7 +4,13 @@
 * Created: 22/02/2026 09:58:24
 * Author : Gebruiker
 */
-#define F_CPU 8000000UL
+#ifndef F_CPU
+#warning	"F_CPU not defined. Define it in project properties."
+
+#elif F_CPU != 8000000
+#warning	"Wrong F_CPU frequency!"
+#endif
+
 #include <avr/io.h>
 #include <util/delay.h>
 #include "adc.h"
@@ -14,15 +20,16 @@
 #include "nixie_display.h"
 #include "pinmap.h"
 #include "geiger.h"
+#include "test.h"
 
-
+	
 #include <avr/interrupt.h>
 volatile uint16_t raw ;
 uint16_t temp=0;
 int main(void)
 
 {
-	
+	timing_test(500);
 }
 
 void run(){
