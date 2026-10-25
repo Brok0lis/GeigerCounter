@@ -25,8 +25,8 @@ void timing_test(uint16_t miliseconds)
 
 	while (1)
 	{
-		delay_ms_var(500);
+		delay_ms_var(miliseconds);
 		PORTD ^= (1 << PD6);         // toggle
-		delay_ms_var(500);
+		delay_ms_var(miliseconds);
 	}
 }

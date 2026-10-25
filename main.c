@@ -20,19 +20,17 @@
 #include "nixie_display.h"
 #include "pinmap.h"
 #include "geiger.h"
-#include "test.h"
-
-	
+#include "test.h"	
 #include <avr/interrupt.h>
+#include "controller.h"
 volatile uint16_t raw ;
 uint16_t temp=0;
-int main(void)
 
-{
-	timing_test(500);
+int main(void){
+	run();
 }
 
-void run(){
+void kek(){
 	
 		
 		
