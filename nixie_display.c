@@ -141,14 +141,21 @@ uint8_t *dp0, uint8_t *dp1, uint8_t *dp2)
 
 
 void nixie_update(void)
-{	
-	hv5222_enable(0);
-	hv5222_write64(hv5222_get_state());
-	if(hv5222_get_enabled()){
+{
+	static uint64_t last_state = 0;   // remember last written state
+
+	uint64_t current = hv5222_get_state();
+
+	// Only write if something changed
+	if (current != last_state)
+	{
+		hv5222_enable(0);
+		hv5222_write64(current);
+		last_state = current;
+
+		if (hv5222_get_enabled())
 		hv5222_enable(1);
 	}
-	//maybe here check if it has to be on?
-
 }
 
 
@@ -217,7 +224,7 @@ void nixie_set_blank(uint8_t tube)
 
 
 void nixie_display_number(uint16_t value, uint8_t dot0, uint8_t dot1, uint8_t dot2)
-{
+{	nixie_clear_all_digits();
 	if (value > 999)
 	value = 999;
 
@@ -288,7 +295,7 @@ void display_voltage(float v)
 }
 
 void display_usv(float usv)
-{
+{	nixie_clear_all_digits();
 	scale_t s = choose_radiation_scale(usv);
 	float scaled = scale_value(usv, s);
 
@@ -308,7 +315,7 @@ void display_usv(float usv)
 }
 
 void display_count(uint16_t count)
-{
+{	nixie_clear_all_digits();
 	scale_t s = SCALE_V;
 
 	uint8_t d0, d1, d2;
@@ -371,7 +378,7 @@ void nixie_update_brightness(uint16_t adc_value)
 	uint8_t pwm_value = (uint32_t)duty * 255u / 100u;
 
 	// Write to Timer1 OC1B (PB2)
-	brightness_pwm_set(pwm_value);
+	brightness_pwm_set(127);
 }
 
 void format_3digits_right_aligned(uint32_t value,

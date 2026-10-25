@@ -31,11 +31,13 @@ void power_supplies_init(void)
 	PSU_12V_DDR  |= (1 << PSU_12V_PIN);
 	PSU_180V_DDR |= (1 << PSU_180V_PIN);
 
-	enable_12V(1);
-	_delay_ms(100);
-	enable_180V(1);
-}
 
+}
+void power_supplies_enable(uint8_t enable){
+		enable_12V(enable);
+		_delay_ms(100);
+		enable_180V(enable);
+}
 void enable_180V(uint8_t enable){
 	if (enable)
 	PSU_180V_PORT |=  (1 << PSU_180V_PIN);

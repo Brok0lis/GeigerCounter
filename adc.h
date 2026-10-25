@@ -18,6 +18,7 @@ void     adc_update(void);
 
 uint16_t adc_get_brightness(void);
 uint16_t adc_get_hv(void);
+uint16_t adc_get_mode(void);
 
 float    adc_to_voltage(uint16_t raw);
 display_mode_t mode_from_adc();

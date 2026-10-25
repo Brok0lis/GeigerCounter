@@ -3,10 +3,11 @@
 
 #include <util/delay.h>
 
-#define MODE_CPM_MAX     300
-#define MODE_USV_MIN     350
-#define MODE_USV_MAX     700
-#define MODE_TIME_MIN    750
+#define MODE_CPM_MAX     155
+#define MODE_USV_MIN     160
+#define MODE_USV_MAX     205
+#define MODE_TIME_MIN    210
+
 
 static uint8_t adc_turn = 0;   // 0 = brightness, 1 = HV, 2 = mode
 static uint16_t adc_brightness_value = 0;
@@ -73,6 +74,11 @@ uint16_t adc_get_brightness(void)
 uint16_t adc_get_hv(void)
 {
 	return adc_hv_value;
+}
+
+uint16_t adc_get_mode(void)
+{
+	return adc_mode_value;
 }
 
 
